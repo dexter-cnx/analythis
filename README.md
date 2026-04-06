@@ -11,6 +11,9 @@
 - วิเคราะห์โฟลเดอร์ในเครื่องหรือ clone Git repository ชั่วคราว
 - **ตรวจจับ profile อัตโนมัติ** พร้อม confidence score และเหตุผล
 - **Rule engine แบบ structured** — 10 กฎสถาปัตยกรรมใน 4 กลุ่ม
+- **Import graph visualization** — parse imports และส่งออกเป็น JSON, Mermaid และ Graphviz DOT
+- **Semantic code summarization** — ดึง exported symbols และอนุมาน domain responsibilities ต่อ module
+- **Multi-repo comparison** — วิเคราะห์หลาย repository และเปรียบเทียบ blueprint แบบ side-by-side
 - สร้างไฟล์ `.analythis/inventory.json` และ `.analythis/blueprint.json`
 - ส่งออก markdown blueprint pack พร้อม findings จัดเรียงตาม severity
 - ส่งออก YAML จาก blueprint JSON
@@ -62,6 +65,25 @@ analythis export ./.analythis/blueprint.json --to yaml
 analythis analyze https://github.com/user/repo.git
 ```
 
+สร้าง import graph พร้อมกับการวิเคราะห์:
+
+```bash
+analythis analyze . --graph
+```
+
+สร้าง import graph แบบ standalone:
+
+```bash
+analythis graph .
+```
+
+เปรียบเทียบสอง repo หรือมากกว่า:
+
+```bash
+analythis compare ./repo-a ./repo-b
+analythis compare ./repo-a ./repo-b ./repo-c --format md --output ./out
+```
+
 ## การตรวจจับ Profile
 
 `analythis` ตรวจจับ profile ของ repository โดยอัตโนมัติจากการให้คะแนน structural signals โดยไม่จำเป็นต้องระบุ flag `--profile` เอง โดย flag นี้ทำหน้าที่เป็น **hint** ที่ช่วยเสริมคะแนนให้ profile ที่ระบุเมื่อคะแนนใกล้เคียงกัน
@@ -69,7 +91,7 @@ analythis analyze https://github.com/user/repo.git
 ### Profiles ที่รองรับ
 
 | Profile | สัญญาณสำคัญ |
-| ------- | ----------- |
+| --- | --- |
 | `generic` | Fallback — ใช้เมื่อไม่มี profile ใดผ่านเกณฑ์ |
 | `web` | next.config, vite.config, tailwind.config, components/, pages/ |
 | `backend` | server.ts entry, routes/, controllers/, Dockerfile, DB manifests |
@@ -97,7 +119,7 @@ analythis analyze https://github.com/user/repo.git
 หลังจากตรวจจับ profile แล้ว `analythis` จะรัน 10 กฎโครงสร้างและรวม findings ไว้ใน blueprint
 
 | กฎ | กลุ่ม | ความรุนแรง |
-| -- | ----- | ---------- |
+| --- | --- | --- |
 | Cyclic module dependencies | dependency | high |
 | High module coupling | dependency | medium |
 | Missing layer boundary rules | dependency + architecture | medium |
@@ -113,6 +135,68 @@ analythis analyze https://github.com/user/repo.git
 
 Findings จะแสดงใน `blueprint.rule_findings` (แบบ structured) และรวมเข้าไปใน `risks` กับ `refactor_opportunities` (string list) เพื่อ backward compatibility
 
+## Import Graph (v1.1)
+
+`analythis graph .` parse import statements จากไฟล์ TypeScript, JavaScript, Python และ Dart และส่งออก 3 รูปแบบ:
+
+| ไฟล์ | รูปแบบ | ใช้งาน |
+| --- | --- | --- |
+| `graph.json` | Structured JSON | ใช้โดยโปรแกรม หรือ CI pipeline |
+| `graph.mmd` | Mermaid flowchart | Render ได้ใน GitHub README หรือ Notion |
+| `graph.dot` | Graphviz DOT | สร้างรูปภาพ PNG/SVG ด้วย `dot -Tpng graph.dot -o graph.png` |
+
+Graph แยกประเภท edge ระหว่าง **internal** (import แบบ relative หรือ package-relative) และ **external** (npm package, stdlib เป็นต้น)
+
+```bash
+analythis graph .
+analythis graph . --output ./reports --shallow
+analythis analyze . --graph        # สร้าง graph พร้อมกับการวิเคราะห์เต็มรูปแบบ
+```
+
+## Semantic Code Summarization (v1.2)
+
+ระหว่างการวิเคราะห์ แต่ละ module จะถูกเสริมข้อมูล semantic โดยไม่ต้องใช้ LLM:
+
+- **`exports`** — สัญลักษณ์ที่ export ออกมา ดึงจาก regex (`export function`, `export class`, `export interface` ฯลฯ)
+- **`responsibilities`** — label ด้าน domain อนุมานจากการจับคู่ชื่อ identifier กับ keyword dictionary 16 หมวด (Authentication, Billing, Notifications, RBAC, Data access, API layer ฯลฯ)
+- **`summary`** — คำอธิบายบรรทัดเดียวที่รวม responsibilities และ exports สำคัญ
+
+ข้อมูลเหล่านี้ปรากฏใน `blueprint.json` ภายในแต่ละ module และใน `reports/module-report.md`
+
+```json
+{
+  "name": "src",
+  "purpose": "Primary source code.",
+  "summary": "Handles Authentication, Data access. Exports UserService, AuthGuard, TokenRepository and 12 more.",
+  "exports": ["UserService", "AuthGuard", "TokenRepository", "..."],
+  "responsibilities": ["Authentication", "Data access", "Authorization & RBAC"]
+}
+```
+
+## Multi-Repo Comparison (v1.3)
+
+`analythis compare` รัน full analysis บนแต่ละ repository และสร้าง structured diff
+
+```bash
+analythis compare ./repo-a ./repo-b
+analythis compare https://github.com/a/x.git https://github.com/b/y.git --format both
+```
+
+ผลลัพธ์:
+
+| ไฟล์ | เนื้อหา |
+| --- | --- |
+| `comparison.json` | Structured diff — profiles, architecture styles, module names, จำนวน risk |
+| `comparison.md` | Report ที่อ่านได้ พร้อม summary table, divergence flags, findings ต่อ repo และ recommendation |
+
+Comparison report แสดง:
+
+- **Profile mismatch** — repo ใช้ detected profile ต่างกันหรือไม่
+- **Architecture mismatch** — architecture style แตกต่างกัน (service-oriented vs feature-first ฯลฯ)
+- **Shared characteristics** — pattern สถาปัตยกรรมและ risk ที่มีร่วมกันทุก repo
+- **Unique characteristics** — สิ่งที่แต่ละ repo มีแต่ repo อื่นไม่มี
+- **Recommendation** — สรุปแนะนำสำหรับการ integrate หรือ align
+
 ## โครงสร้าง Output
 
 `analythis analyze .` จะสร้างไฟล์ดังนี้:
@@ -120,11 +204,14 @@ Findings จะแสดงใน `blueprint.rule_findings` (แบบ structure
 ```text
 .analythis/
   inventory.json
-  blueprint.json          ← มี detected_profiles + rule_findings
+  blueprint.json          ← มี detected_profiles + rule_findings + module semantics
   prompt-pack.json
+  graph.json              ← import graph (เมื่อใช้ --graph)
+  graph.mmd               ← Mermaid diagram
+  graph.dot               ← Graphviz DOT
   reports/
     inventory.md
-    module-report.md
+    module-report.md      ← มี exports + responsibilities ต่อ module
     dependency-report.md
   blueprint/
     system-overview.md    ← profile confidence + เหตุผลการตรวจจับ
@@ -140,6 +227,14 @@ Findings จะแสดงใน `blueprint.rule_findings` (แบบ structure
     onboard_team.md
 ```
 
+`analythis compare` จะสร้าง:
+
+```text
+.analythis-compare/
+  comparison.json
+  comparison.md
+```
+
 ## คำสั่งที่รองรับ
 
 ### `analythis analyze <path-or-url>`
@@ -153,10 +248,32 @@ Findings จะแสดงใน `blueprint.rule_findings` (แบบ structure
 - `--branch <name>`: Git branch สำหรับ remote repo
 - `--shallow`: วิเคราะห์เร็วขึ้น เบาขึ้น
 - `--verbose`: แสดง log รายละเอียด
+- `--graph`: สร้าง import graph ด้วย (`graph.json`, `graph.mmd`, `graph.dot`)
+
+### `analythis graph <path-or-url>`
+
+สร้าง import graph แบบ standalone โดยไม่รัน full analysis
+
+ตัวเลือก:
+
+- `--output <dir>`: โฟลเดอร์ output ค่าเริ่มต้น `.analythis`
+- `--branch <name>`: Git branch สำหรับ remote repo
+- `--shallow`: วิเคราะห์เร็วขึ้น เบาขึ้น
 
 ### `analythis inspect <path-or-url>`
 
 สร้างเฉพาะ `inventory.json` และ `reports/inventory.md` โดยไม่รันการวิเคราะห์หรือ rule engine
+
+### `analythis compare <path-or-url...>`
+
+วิเคราะห์สอง repository หรือมากกว่า แล้วสร้าง comparison report
+
+ตัวเลือก:
+
+- `--output <dir>`: โฟลเดอร์ output ค่าเริ่มต้น `.analythis-compare`
+- `--format <type>`: `json | md | both` ค่าเริ่มต้น `both`
+- `--branch <name>`: Git branch สำหรับ remote repo
+- `--shallow`: วิเคราะห์เร็วขึ้น เบาขึ้น
 
 ### `analythis export <blueprint-json>`
 
@@ -172,10 +289,11 @@ src/
   profiles/         ← นิยาม profile, registry, detector
   rules/            ← rule engine + 10 กฎ (dependency / architecture / structure / cross-cutting)
   core/
-    engine/         ← analyzer pipeline
+    engine/         ← analyzer pipeline, comparator
     types/          ← Blueprint, Inventory, options
-  inspectors/       ← inventory, architecture, domain, interface, manifest, risk
-  exporters/        ← markdown, yaml
+  inspectors/       ← inventory, architecture, domain, interface, manifest, risk,
+                       import-graph, semantic
+  exporters/        ← markdown, yaml, graph, comparison
   intake/           ← local path + git clone resolution
   cli/              ← commander CLI
 ```
@@ -237,10 +355,12 @@ npm test
 npm run dev -- analyze .
 ```
 
-## แผนพัฒนาต่อ
+## แผนพัฒนา
 
-- แสดง import graph แบบ visualization
-- สรุป semantic code ที่ละเอียดยิ่งขึ้น
-- วิเคราะห์เปรียบเทียบหลาย repo
-- โหมด LLM deep-synthesis แบบ plugin ได้
-- web dashboard
+| เวอร์ชัน | ฟีเจอร์ | สถานะ |
+| --- | --- | --- |
+| v1.1 | Import graph visualization | ✅ เสร็จแล้ว |
+| v1.2 | Semantic code summarization | ✅ เสร็จแล้ว |
+| v1.3 | Multi-repo comparison | ✅ เสร็จแล้ว |
+| v2.0 | LLM plugin mode | วางแผน |
+| v2.1 | Web dashboard | วางแผน |

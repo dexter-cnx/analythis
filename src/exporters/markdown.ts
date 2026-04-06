@@ -248,10 +248,26 @@ function buildModuleReport(blueprint: Blueprint): string {
   return (
     '# Module Report\n\n' +
     blueprint.modules
-      .map(
-        (m) =>
-          `## ${m.name}\n- Purpose: ${m.purpose}\n- Paths: ${m.paths.join(', ')}\n- Depends on: ${m.dependsOn.join(', ') || 'None inferred'}`
-      )
+      .map((m) => {
+        const lines: string[] = [
+          `## ${m.name}`,
+          `- Purpose: ${m.purpose}`,
+          `- Paths: ${m.paths.join(', ')}`,
+          `- Depends on: ${m.dependsOn.join(', ') || 'None inferred'}`
+        ];
+        if (m.summary) {
+          lines.push(`- Summary: ${m.summary}`);
+        }
+        if (m.responsibilities && m.responsibilities.length > 0) {
+          lines.push(`- Responsibilities: ${m.responsibilities.join(', ')}`);
+        }
+        if (m.exports && m.exports.length > 0) {
+          const displayed = m.exports.slice(0, 10);
+          const more = m.exports.length > 10 ? ` (+${m.exports.length - 10} more)` : '';
+          lines.push(`- Exports: ${displayed.join(', ')}${more}`);
+        }
+        return lines.join('\n');
+      })
       .join('\n\n')
   );
 }

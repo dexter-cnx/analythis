@@ -11,6 +11,7 @@ import { inspectInventory } from '../../inspectors/inventory-inspector';
 import { inspectRefactorOpportunities, inspectRisks } from '../../inspectors/risk-inspector';
 import { detectProfile } from '../../profiles/detector';
 import { defaultRuleEngine } from '../../rules/index';
+import { enrichModulesWithSemantics } from '../../inspectors/semantic-inspector';
 
 export function analyzeRepository(
   repoRoot: string,
@@ -24,7 +25,8 @@ export function analyzeRepository(
 
   // --- Structural inspectors ---
   const architecture = inspectArchitecture(inventory, primaryProfileName);
-  const modules = inspectModules(inventory);
+  const rawModules = inspectModules(inventory);
+  const modules = enrichModulesWithSemantics(rawModules, repoRoot, options.shallow);
   const entities = inspectEntities(repoRoot, inventory, options.shallow);
   const use_cases = inspectUseCases(repoRoot, inventory, options.shallow);
   const api_surfaces = inspectApiSurfaces(inventory);

@@ -3,6 +3,8 @@ import { analyzeRepository } from '../../core/engine/analyzer';
 import type { AnalyzeOptions } from '../../core/types/options';
 import { resolveInput } from '../../intake/resolve-input';
 import { exportBlueprintMarkdown, exportInventoryMarkdown, exportPromptPackMarkdown } from '../../exporters/markdown';
+import { buildImportGraph } from '../../inspectors/import-graph-inspector';
+import { exportImportGraph } from '../../exporters/graph';
 import { writeJson, ensureDir } from '../../utils';
 
 export async function runAnalyze(input: string, options: AnalyzeOptions): Promise<void> {
@@ -20,6 +22,12 @@ export async function runAnalyze(input: string, options: AnalyzeOptions): Promis
     if (options.format === 'md' || options.format === 'both') {
       exportBlueprintMarkdown(result.blueprint, outputDir);
       exportPromptPackMarkdown(result.promptPack, outputDir);
+    }
+
+    if (options.graph) {
+      const graph = buildImportGraph(resolved.workingRoot, options.shallow);
+      exportImportGraph(graph, outputDir);
+      console.log(`Import graph: ${graph.nodes.filter((n) => n.language !== 'external').length} files, ${graph.edges.filter((e) => e.type === 'internal').length} internal edges`);
     }
 
     console.log(`analythis analyze completed.`);

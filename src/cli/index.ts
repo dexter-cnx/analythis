@@ -3,7 +3,9 @@ import { Command } from 'commander';
 import { runAnalyze } from './commands/analyze';
 import { runInspect } from './commands/inspect';
 import { runExport } from './commands/export';
-import type { AnalyzeOptions, ExportOptions } from '../core/types/options';
+import { runGraph } from './commands/graph';
+import { runCompare } from './commands/compare';
+import type { AnalyzeOptions, ExportOptions, CompareOptions } from '../core/types/options';
 import type { ProfileName } from '../core/types/inventory';
 
 const program = new Command();
@@ -23,6 +25,7 @@ program
   .option('--branch <name>', 'branch name for remote Git repositories')
   .option('--shallow', 'faster, lighter analysis', false)
   .option('--verbose', 'verbose logging', false)
+  .option('--graph', 'also generate import graph (graph.json, graph.mmd, graph.dot)', false)
   .action(async (input: string, opts: Record<string, unknown>) => {
     const options: AnalyzeOptions = {
       profile: (opts.profile as ProfileName) ?? 'generic',
@@ -31,7 +34,8 @@ program
       format: ((opts.format as AnalyzeOptions['format']) ?? 'both'),
       branch: opts.branch ? String(opts.branch) : undefined,
       shallow: Boolean(opts.shallow),
-      verbose: Boolean(opts.verbose)
+      verbose: Boolean(opts.verbose),
+      graph: Boolean(opts.graph)
     };
     await runAnalyze(input, options);
   });
@@ -56,6 +60,37 @@ program
       outputDir: String(opts.output ?? '.analythis-export')
     };
     await runExport(input, options);
+  });
+
+program
+  .command('graph')
+  .argument('<path-or-url>', 'local repository path or Git URL')
+  .option('--output <dir>', 'output directory', '.analythis')
+  .option('--branch <name>', 'branch name for remote Git repositories')
+  .option('--shallow', 'faster, lighter analysis', false)
+  .action(async (input: string, opts: Record<string, unknown>) => {
+    await runGraph(input, String(opts.output ?? '.analythis'), opts.branch ? String(opts.branch) : undefined, Boolean(opts.shallow));
+  });
+
+program
+  .command('compare')
+  .argument('<paths...>', 'two or more local paths or Git URLs to compare')
+  .option('--output <dir>', 'output directory', '.analythis-compare')
+  .option('--format <type>', 'json | md | both', 'both')
+  .option('--branch <name>', 'branch name for remote Git repositories')
+  .option('--shallow', 'faster, lighter analysis', false)
+  .action(async (inputs: string[], opts: Record<string, unknown>) => {
+    if (inputs.length < 2) {
+      console.error('compare requires at least 2 paths/URLs');
+      process.exit(1);
+    }
+    const options: CompareOptions = {
+      outputDir: String(opts.output ?? '.analythis-compare'),
+      format: (opts.format as CompareOptions['format']) ?? 'both',
+      branch: opts.branch ? String(opts.branch) : undefined,
+      shallow: Boolean(opts.shallow)
+    };
+    await runCompare(inputs, options);
   });
 
 program.parseAsync(process.argv).catch((error) => {

@@ -11,6 +11,9 @@ It inspects a local repository or a Git URL, automatically detects the repositor
 - Analyze local folders or clone a Git repository temporarily
 - **Automatic profile detection** with confidence scoring and reasons
 - **Structured rule engine** — 10 architectural rules across 4 groups
+- **Import graph visualization** — parse imports and export as JSON, Mermaid, and Graphviz DOT
+- **Semantic code summarization** — extract exported symbols and infer domain responsibilities per module
+- **Multi-repo comparison** — analyze N repositories and diff their blueprints side-by-side
 - Generate `.analythis/inventory.json` and `.analythis/blueprint.json`
 - Export markdown blueprint pack with severity-ranked findings
 - Export YAML from blueprint JSON
@@ -62,6 +65,25 @@ Analyze a Git URL:
 analythis analyze https://github.com/user/repo.git
 ```
 
+Generate import graph alongside analysis:
+
+```bash
+analythis analyze . --graph
+```
+
+Generate import graph standalone:
+
+```bash
+analythis graph .
+```
+
+Compare two or more repositories:
+
+```bash
+analythis compare ./repo-a ./repo-b
+analythis compare ./repo-a ./repo-b ./repo-c --format md --output ./out
+```
+
 ## Profile detection
 
 `analythis` automatically detects the repository profile by scoring structural signals — no manual flag required. The `--profile` flag acts as a **hint** that boosts the named profile when scores are tied.
@@ -69,7 +91,7 @@ analythis analyze https://github.com/user/repo.git
 ### Supported profiles
 
 | Profile | Key signals |
-| ------- | ----------- |
+| --- | --- |
 | `generic` | Fallback — applies when no other profile clears the threshold |
 | `web` | next.config, vite.config, tailwind.config, components/, pages/ |
 | `backend` | server.ts entry, routes/, controllers/, Dockerfile, DB manifests |
@@ -97,7 +119,7 @@ analythis analyze https://github.com/user/repo.git
 After profiling, `analythis` runs 10 structural rules and includes findings in the blueprint.
 
 | Rule | Group | Severity |
-| ---- | ----- | -------- |
+| --- | --- | --- |
 | Cyclic module dependencies | dependency | high |
 | High module coupling | dependency | medium |
 | Missing layer boundary rules | dependency + architecture | medium |
@@ -113,6 +135,68 @@ Rules restricted to specific profiles (e.g. `missing-service-layer` only runs on
 
 Findings are surfaced in `blueprint.rule_findings` (structured) and merged into `risks` and `refactor_opportunities` (string lists) for backward compatibility.
 
+## Import graph (v1.1)
+
+`analythis graph .` parses import statements from TypeScript, JavaScript, Python, and Dart source files and exports three formats:
+
+| File | Format | Use |
+| --- | --- | --- |
+| `graph.json` | Structured JSON | Programmatic consumption, CI pipelines |
+| `graph.mmd` | Mermaid flowchart | Render directly in GitHub README or Notion |
+| `graph.dot` | Graphviz DOT | Generate PNG/SVG with `dot -Tpng graph.dot -o graph.png` |
+
+The graph distinguishes **internal** edges (relative or package-relative imports) from **external** edges (npm packages, stdlib modules, etc.).
+
+```bash
+analythis graph .
+analythis graph . --output ./reports --shallow
+analythis analyze . --graph        # generates graph alongside full analysis
+```
+
+## Semantic code summarization (v1.2)
+
+During analysis, each module is enriched with semantic data extracted from its source files without requiring an LLM:
+
+- **`exports`** — public symbols found via regex (`export function`, `export class`, `export interface`, etc.)
+- **`responsibilities`** — domain labels inferred by matching identifier names against a 16-category keyword dictionary (Authentication, Billing, Notifications, RBAC, Data access, API layer, …)
+- **`summary`** — a one-line human-readable description combining responsibilities and top exports
+
+These fields appear in `blueprint.json` under each module and in `reports/module-report.md`.
+
+```json
+{
+  "name": "src",
+  "purpose": "Primary source code.",
+  "summary": "Handles Authentication, Data access. Exports UserService, AuthGuard, TokenRepository and 12 more.",
+  "exports": ["UserService", "AuthGuard", "TokenRepository", "..."],
+  "responsibilities": ["Authentication", "Data access", "Authorization & RBAC"]
+}
+```
+
+## Multi-repo comparison (v1.3)
+
+`analythis compare` runs full analysis on each repository and produces a structured diff.
+
+```bash
+analythis compare ./repo-a ./repo-b
+analythis compare https://github.com/a/x.git https://github.com/b/y.git --format both
+```
+
+Output:
+
+| File | Content |
+| --- | --- |
+| `comparison.json` | Structured diff — profiles, architecture styles, module names, risk counts |
+| `comparison.md` | Human-readable report with summary table, divergence flags, per-repo findings, and recommendation |
+
+The comparison report highlights:
+
+- **Profile mismatch** — whether repos use different detected profiles
+- **Architecture mismatch** — diverging style (service-oriented vs feature-first, etc.)
+- **Shared characteristics** — common architecture patterns and risks across all repos
+- **Unique characteristics** — what each repo has that others don't
+- **Recommendation** — actionable summary for integration or alignment
+
 ## Output layout
 
 `analythis analyze .` creates:
@@ -120,11 +204,14 @@ Findings are surfaced in `blueprint.rule_findings` (structured) and merged into 
 ```text
 .analythis/
   inventory.json
-  blueprint.json          ← includes detected_profiles + rule_findings
+  blueprint.json          ← includes detected_profiles + rule_findings + module semantics
   prompt-pack.json
+  graph.json              ← import graph (when --graph is used)
+  graph.mmd               ← Mermaid diagram
+  graph.dot               ← Graphviz DOT
   reports/
     inventory.md
-    module-report.md
+    module-report.md      ← includes exports + responsibilities per module
     dependency-report.md
   blueprint/
     system-overview.md    ← profile confidence + detection reasons
@@ -140,6 +227,14 @@ Findings are surfaced in `blueprint.rule_findings` (structured) and merged into 
     onboard_team.md
 ```
 
+`analythis compare` creates:
+
+```text
+.analythis-compare/
+  comparison.json
+  comparison.md
+```
+
 ## Supported commands
 
 ### `analythis analyze <path-or-url>`
@@ -153,10 +248,32 @@ Options:
 - `--branch <name>`: Git branch for remote repos
 - `--shallow`: faster, lighter analysis
 - `--verbose`: log more details
+- `--graph`: also generate import graph (`graph.json`, `graph.mmd`, `graph.dot`)
+
+### `analythis graph <path-or-url>`
+
+Standalone import graph generation. No full analysis.
+
+Options:
+
+- `--output <dir>`: output directory, default `.analythis`
+- `--branch <name>`: Git branch for remote repos
+- `--shallow`: faster, lighter analysis
 
 ### `analythis inspect <path-or-url>`
 
 Creates only `inventory.json` and `reports/inventory.md`. No analysis or rule engine.
+
+### `analythis compare <path-or-url...>`
+
+Analyzes two or more repositories and outputs a comparison report.
+
+Options:
+
+- `--output <dir>`: output directory, default `.analythis-compare`
+- `--format <type>`: `json | md | both`, default `both`
+- `--branch <name>`: Git branch for remote repos
+- `--shallow`: faster, lighter analysis
 
 ### `analythis export <blueprint-json>`
 
@@ -172,10 +289,11 @@ src/
   profiles/         ← profile definitions, registry, detector
   rules/            ← rule engine + 10 rules (dependency / architecture / structure / cross-cutting)
   core/
-    engine/         ← analyzer pipeline
+    engine/         ← analyzer pipeline, comparator
     types/          ← Blueprint, Inventory, options
-  inspectors/       ← inventory, architecture, domain, interface, manifest, risk
-  exporters/        ← markdown, yaml
+  inspectors/       ← inventory, architecture, domain, interface, manifest, risk,
+                       import-graph, semantic
+  exporters/        ← markdown, yaml, graph, comparison
   intake/           ← local path + git clone resolution
   cli/              ← commander CLI
 ```
@@ -239,8 +357,10 @@ npm run dev -- analyze .
 
 ## Roadmap
 
-- Import graph visualization
-- Richer semantic code summarization
-- Comparative repo analysis
-- Pluggable LLM deep-synthesis mode
-- Web dashboard
+| Version | Feature | Status |
+| --- | --- | --- |
+| v1.1 | Import graph visualization | ✅ Done |
+| v1.2 | Semantic code summarization | ✅ Done |
+| v1.3 | Multi-repo comparison | ✅ Done |
+| v2.0 | Pluggable LLM deep-synthesis mode | Planned |
+| v2.1 | Web dashboard | Planned |
