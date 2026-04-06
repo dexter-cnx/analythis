@@ -1,0 +1,6 @@
+{
+  "refactor": "Read .analythis/blueprint.json and refactor the project to align with the inferred architecture. Focus on the inferred architecture and domain. Preserve behavior while improving boundaries, services, and contracts.",
+  "regenerate": "Using .analythis/blueprint.json as source of truth, regenerate a clean starter for the same domain and interfaces. Keep reusable foundations and separate app-specific logic.",
+  "extract_core": "Analyze .analythis/blueprint.json and separate reusable business foundations from app-specific logic. Propose package boundaries, interfaces, and migration order.",
+  "onboard_team": "Read the blueprint and create a concise onboarding guide explaining the repository purpose, modules, entities, APIs, risks, and first safe changes for a new contributor."
+}

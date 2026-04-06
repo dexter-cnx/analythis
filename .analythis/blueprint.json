@@ -1,0 +1,78 @@
+{
+  "project_name": "analythis",
+  "repo_type": "library",
+  "summary": "analythis appears to be a library repository with modules src. Likely domain entities include Inventory. External interfaces detected: Unknown.",
+  "architecture": {
+    "style": [
+      "heuristic-structure"
+    ],
+    "layers": [],
+    "module_strategy": "directory-based",
+    "dependency_rules": []
+  },
+  "modules": [
+    {
+      "name": "src",
+      "purpose": "Primary source code.",
+      "paths": [
+        "src"
+      ],
+      "dependsOn": []
+    }
+  ],
+  "entities": [
+    {
+      "name": "Inventory",
+      "description": "Likely domain entity inferred from file path .claude/worktrees/peaceful-chatelet/src/core/types/inventory.ts.",
+      "fields": [],
+      "rules": [
+        "entity invariants should be validated"
+      ]
+    }
+  ],
+  "use_cases": [],
+  "api_surfaces": [
+    {
+      "type": "Unknown",
+      "name": "No obvious external interface",
+      "details": "No clear API surface was inferred from the repository structure."
+    }
+  ],
+  "events": [],
+  "dependencies": [
+    {
+      "name": "commander",
+      "purpose": "General dependency",
+      "critical": false
+    },
+    {
+      "name": "yaml",
+      "purpose": "General dependency",
+      "critical": false
+    }
+  ],
+  "configuration": [
+    "tsconfig.json"
+  ],
+  "reusable_foundations": [
+    "catalog/inventory primitives"
+  ],
+  "app_specific_logic": [],
+  "risks": [
+    "No obvious test locations were detected.",
+    "No CI pipeline files were detected.",
+    "No eventing or job patterns were detected; async workflows may be tightly coupled."
+  ],
+  "refactor_opportunities": [
+    "Introduce a clear test strategy for high-value modules and use cases.",
+    "Consider adding audit events for important business mutations."
+  ],
+  "open_questions": [
+    "What test strategy should cover the highest-risk modules?",
+    "Should CI be added for build, test, and lint automation?",
+    "What are the intended external interfaces of this repository?"
+  ],
+  "profile": "generic",
+  "focus_areas": [],
+  "generated_at": "2026-04-06T11:28:38.475Z"
+}

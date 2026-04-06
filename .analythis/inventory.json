@@ -1,0 +1,54 @@
+{
+  "repoName": "analythis",
+  "repoRoot": "/Users/dxtr_m4/develop/AI/analythis",
+  "repoType": "library",
+  "rootFiles": [
+    "LICENSE",
+    "README.md",
+    "package-lock.json",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "topLevelDirs": [
+    ".analythis",
+    ".claude",
+    ".git",
+    "dist",
+    "docs",
+    "examples",
+    "node_modules",
+    "schemas",
+    "src",
+    "templates"
+  ],
+  "languages": [
+    "JSON",
+    "Markdown",
+    "TypeScript"
+  ],
+  "manifests": [
+    ".claude/worktrees/peaceful-chatelet/package.json",
+    "package.json"
+  ],
+  "entryPoints": [
+    ".claude/worktrees/peaceful-chatelet/src/cli/index.ts",
+    "src/cli/index.ts"
+  ],
+  "testLocations": [],
+  "ciFiles": [],
+  "infraFiles": [],
+  "notableFiles": [
+    ".claude/worktrees/peaceful-chatelet/LICENSE",
+    ".claude/worktrees/peaceful-chatelet/README.md",
+    ".claude/worktrees/peaceful-chatelet/templates/blueprint/README.md",
+    ".claude/worktrees/peaceful-chatelet/tsconfig.json",
+    "LICENSE",
+    "README.md",
+    "templates/blueprint/README.md",
+    "tsconfig.json"
+  ],
+  "packageManagers": [
+    "npm"
+  ],
+  "frameworkHints": []
+}

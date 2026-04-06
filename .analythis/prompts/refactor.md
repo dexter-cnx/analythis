@@ -1,0 +1,1 @@
+Read .analythis/blueprint.json and refactor the project to align with the inferred architecture. Focus on the inferred architecture and domain. Preserve behavior while improving boundaries, services, and contracts.
