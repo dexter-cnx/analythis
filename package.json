@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Framework-agnostic repository analysis engine that turns codebases into blueprints, reports, and prompt packs.",
   "license": "MIT",
-  "author": "OpenAI",
+  "author": "Kitipong Sarajan <dextercnx>",
   "type": "commonjs",
   "bin": {
     "analythis": "dist/cli/index.js"
@@ -16,11 +16,14 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist .analythis tmp",
     "dev": "ts-node src/cli/index.ts",
     "start": "node dist/cli/index.js",
     "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [
     "repository-analysis",
