@@ -6,7 +6,9 @@
       "Read(//Users/dxtr_m4/**)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('lockfileVersion'\\)\\); regs=set\\(\\); [regs.add\\(v.get\\('resolved',''\\).split\\('/'\\)[2]\\) for v in d.get\\('packages',{}\\).values\\(\\) if v.get\\('resolved'\\)]; print\\(regs\\)\")",
       "Bash(npm whoami:*)",
-      "Bash(npm publish:*)"
+      "Bash(npm publish:*)",
+      "Bash(gpg --list-secret-keys --keyid-format LONG)",
+      "Bash(brew list:*)"
     ]
   }
 }
