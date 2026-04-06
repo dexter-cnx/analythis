@@ -4,7 +4,9 @@
       "Read(//Users/dxtr_m4/.npm/_logs/**)",
       "Bash(npm config:*)",
       "Read(//Users/dxtr_m4/**)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('lockfileVersion'\\)\\); regs=set\\(\\); [regs.add\\(v.get\\('resolved',''\\).split\\('/'\\)[2]\\) for v in d.get\\('packages',{}\\).values\\(\\) if v.get\\('resolved'\\)]; print\\(regs\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('lockfileVersion'\\)\\); regs=set\\(\\); [regs.add\\(v.get\\('resolved',''\\).split\\('/'\\)[2]\\) for v in d.get\\('packages',{}\\).values\\(\\) if v.get\\('resolved'\\)]; print\\(regs\\)\")",
+      "Bash(npm whoami:*)",
+      "Bash(npm publish:*)"
     ]
   }
 }
