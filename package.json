@@ -1,5 +1,5 @@
 {
-  "name": "analythis",
+  "name": "@dextercnx/analythis",
   "version": "1.0.0",
   "description": "Framework-agnostic repository analysis engine that turns codebases into blueprints, reports, and prompt packs.",
   "license": "MIT",

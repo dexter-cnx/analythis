@@ -1,70 +1,70 @@
-# analythis
+# @dextercnx/analythis
 
-`analythis` is a framework-agnostic repository analysis engine.
+[🇬🇧 English](README_EN.md)
 
-It inspects a local repository or a Git URL, infers structure and architecture, detects modules, entities, APIs, risks, and reusable foundations, then exports a machine-readable blueprint and human-readable markdown reports.
+`analythis` คือเครื่องมือวิเคราะห์โครงสร้าง repository ที่ไม่ผูกติดกับ framework ใด
 
-## Features
+ทำงานโดยการตรวจสอบ repository ในเครื่องหรือ Git URL แล้วอนุมานโครงสร้าง สถาปัตยกรรม โมดูล entities, APIs, ความเสี่ยง และส่วนที่นำกลับมาใช้ใหม่ได้ จากนั้นส่งออกเป็น blueprint ที่อ่านได้ด้วยเครื่องและรายงาน markdown สำหรับมนุษย์
 
-- Analyze local folders or clone a Git repository temporarily
-- Generate `.analythis/inventory.json`
-- Generate `.analythis/blueprint.json`
-- Export markdown blueprint pack
-- Export YAML from blueprint JSON
-- Heuristic support for web, backend, mobile, library, and monorepo profiles
-- Prompt-pack generation for refactoring, regeneration, core extraction, and onboarding
+## ฟีเจอร์
 
-## Install
+- วิเคราะห์โฟลเดอร์ในเครื่องหรือ clone Git repository ชั่วคราว
+- สร้างไฟล์ `.analythis/inventory.json`
+- สร้างไฟล์ `.analythis/blueprint.json`
+- ส่งออก markdown blueprint pack
+- ส่งออก YAML จาก blueprint JSON
+- รองรับ profile แบบ heuristic สำหรับ web, backend, mobile, library และ monorepo
+- สร้าง prompt-pack สำหรับ refactoring, regeneration, core extraction และ onboarding
+
+## ติดตั้ง
 
 ```bash
-npm install
-npm run build
-npm link
+npm install -g @dextercnx/analythis
 ```
 
-After linking, the `analythis` command is available globally.
+เมื่อติดตั้งแล้ว สามารถใช้คำสั่ง `analythis` ได้ทันทีจากทุกที่
 
-## Quick start
+## เริ่มต้นใช้งาน
 
-Analyze the current repo:
+วิเคราะห์ repo ปัจจุบัน:
 
 ```bash
 analythis analyze .
 ```
 
-Analyze with a profile and custom output dir:
+วิเคราะห์พร้อมระบุ profile และโฟลเดอร์ output:
 
 ```bash
 analythis analyze . --profile backend --output ./out --format both
 ```
 
-Inspect only:
+ตรวจสอบโครงสร้างเท่านั้น:
 
 ```bash
 analythis inspect .
 ```
 
-Export an existing blueprint to markdown:
+ส่งออก blueprint เป็น markdown:
 
 ```bash
 analythis export ./.analythis/blueprint.json --to md
 ```
 
-Export an existing blueprint to YAML:
+ส่งออก blueprint เป็น YAML:
 
 ```bash
 analythis export ./.analythis/blueprint.json --to yaml
 ```
 
-Analyze a Git URL:
+วิเคราะห์จาก Git URL:
 
 ```bash
 analythis analyze https://github.com/user/repo.git
 ```
 
-## Output layout
+## โครงสร้าง output
 
-By default, `analythis analyze .` creates:
+`analythis analyze .` จะสร้างไฟล์ดังนี้:
 
 ```text
 .analythis/
@@ -84,36 +84,36 @@ By default, `analythis analyze .` creates:
     next-prompts.md
 ```
 
-## Supported commands
+## คำสั่งที่รองรับ
 
 ### `analythis analyze <path-or-url>`
 
-Options:
+ตัวเลือก:
 
 - `--profile <name>`: `generic | web | backend | mobile | monorepo | library`
-- `--focus <items>`: comma-separated focus areas such as `auth,billing,queue`
-- `--output <dir>`: output directory, default `.analythis`
-- `--format <type>`: `json | md | both`, default `both`
-- `--branch <name>`: Git branch for remote repos
-- `--shallow`: faster, lighter analysis
-- `--verbose`: log more details
+- `--focus <items>`: โฟกัสเฉพาะส่วน เช่น `auth,billing,queue`
+- `--output <dir>`: โฟลเดอร์ output ค่าเริ่มต้น `.analythis`
+- `--format <type>`: `json | md | both` ค่าเริ่มต้น `both`
+- `--branch <name>`: Git branch สำหรับ remote repo
+- `--shallow`: วิเคราะห์เร็วขึ้น เบาขึ้น
+- `--verbose`: แสดง log รายละเอียด
 
 ### `analythis inspect <path-or-url>`
 
-Creates only `inventory.json` and `reports/inventory.md`.
+สร้างเฉพาะ `inventory.json` และ `reports/inventory.md`
 
 ### `analythis export <blueprint-json>`
 
-Options:
+ตัวเลือก:
 
-- `--to <type>`: `md | yaml`, default `md`
-- `--output <dir>`: output directory, default `.analythis-export`
+- `--to <type>`: `md | yaml` ค่าเริ่มต้น `md`
+- `--output <dir>`: โฟลเดอร์ output ค่าเริ่มต้น `.analythis-export`
 
-## Design notes
+## หมายเหตุการออกแบบ
 
-`analythis` is intentionally heuristic in v1.0. It aims to provide useful, structured context quickly rather than perfect semantic understanding. The blueprint is safe to feed into coding agents, refactor planners, or onboarding documentation workflows.
+`analythis` ใน v1.0 ใช้วิธี heuristic โดยเจตนา มุ่งให้ context ที่มีโครงสร้างและมีประโยชน์ได้อย่างรวดเร็ว มากกว่าความเข้าใจ semantic ที่สมบูรณ์แบบ blueprint ที่ได้สามารถนำไปป้อนให้ coding agent, refactor planner หรือ workflow สร้างเอกสาร onboarding ได้ทันที
 
-## Development
+## พัฒนาต่อ
 
 ```bash
 npm install
@@ -121,10 +121,10 @@ npm run build
 npm run dev -- analyze .
 ```
 
-## Roadmap ideas
+## แผนพัฒนาต่อ
 
-- import graph visualization
-- richer semantic code summarization
-- comparative repo analysis
-- pluggable LLM deep-synthesis mode
+- แสดง import graph แบบ visualization
+- สรุป semantic code ที่ละเอียดยิ่งขึ้น
+- วิเคราะห์เปรียบเทียบหลาย repo
+- โหมด LLM deep-synthesis แบบ plugin ได้
 - web dashboard
