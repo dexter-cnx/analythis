@@ -1,4 +1,7 @@
 import type { RepoType } from './inventory';
+import type { RuleResult } from '../../rules/types';
+
+export type { RuleResult };
 
 export interface BlueprintModule {
   name: string;
@@ -33,6 +36,13 @@ export interface BlueprintDependency {
   critical: boolean;
 }
 
+export interface DetectedProfileSummary {
+  primary: string;
+  primaryConfidence: number;
+  primaryReasons: string[];
+  secondary: string[];
+}
+
 export interface Blueprint {
   project_name: string;
   repo_type: RepoType;
@@ -52,9 +62,16 @@ export interface Blueprint {
   configuration: string[];
   reusable_foundations: string[];
   app_specific_logic: string[];
+  /** Human-readable risk strings (derived from rule_findings + heuristic inspector). */
   risks: string[];
+  /** Human-readable refactor suggestions (derived from rule_findings + heuristic inspector). */
   refactor_opportunities: string[];
   open_questions: string[];
+  /** Structured rule engine findings. */
+  rule_findings: RuleResult[];
+  /** Detected profile information. */
+  detected_profiles: DetectedProfileSummary;
+  /** @deprecated Use detected_profiles.primary instead. Kept for backward compat. */
   profile: string;
   focus_areas: string[];
   generated_at: string;

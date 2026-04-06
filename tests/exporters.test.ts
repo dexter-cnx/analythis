@@ -24,6 +24,13 @@ function makeBlueprint(overrides: Partial<Blueprint> = {}): Blueprint {
     risks: [],
     refactor_opportunities: [],
     open_questions: [],
+    rule_findings: [],
+    detected_profiles: {
+      primary: 'generic',
+      primaryConfidence: 1,
+      primaryReasons: [],
+      secondary: []
+    },
     profile: 'generic',
     focus_areas: [],
     generated_at: '2026-01-01T00:00:00.000Z',
