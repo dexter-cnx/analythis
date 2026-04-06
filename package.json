@@ -28,6 +28,8 @@
     "clean": "rm -rf dist .analythis tmp",
     "dev": "ts-node src/cli/index.ts",
     "start": "node dist/cli/index.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
     "prepack": "npm run build"
   },
   "engines": {
@@ -45,7 +47,10 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.6.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

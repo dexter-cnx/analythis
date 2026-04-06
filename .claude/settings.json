@@ -10,7 +10,8 @@
       "Bash(gpg --list-secret-keys --keyid-format LONG)",
       "Bash(brew list:*)",
       "Bash(git remote:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(npm test:*)"
     ]
   }
 }
