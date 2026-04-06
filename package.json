@@ -16,7 +16,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "./node_modules/.bin/tsc -p tsconfig.json",
     "clean": "rm -rf dist .analythis tmp",
     "dev": "ts-node src/cli/index.ts",
     "start": "node dist/cli/index.js",
