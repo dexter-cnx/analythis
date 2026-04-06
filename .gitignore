@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.analythis/
+tmp/
+*.tgz
+.env

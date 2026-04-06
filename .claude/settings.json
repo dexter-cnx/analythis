@@ -8,7 +8,9 @@
       "Bash(npm whoami:*)",
       "Bash(npm publish:*)",
       "Bash(gpg --list-secret-keys --keyid-format LONG)",
-      "Bash(brew list:*)"
+      "Bash(brew list:*)",
+      "Bash(git remote:*)",
+      "Bash(git config:*)"
     ]
   }
 }
