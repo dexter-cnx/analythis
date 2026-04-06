@@ -1,0 +1,8 @@
+src/
+*.ts
+!*.d.ts
+tsconfig.json
+.analythis/
+tmp/
+.github/
+*.tgz
