@@ -1,0 +1,115 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.exportInventoryMarkdown = exportInventoryMarkdown;
+exports.exportBlueprintMarkdown = exportBlueprintMarkdown;
+exports.exportPromptPackMarkdown = exportPromptPackMarkdown;
+const path = __importStar(require("path"));
+const utils_1 = require("../utils");
+function exportInventoryMarkdown(inventory, outputDir) {
+    const md = [
+        `# Inventory: ${inventory.repoName}`,
+        '',
+        `- Repo root: \`${inventory.repoRoot}\``,
+        `- Repo type: **${inventory.repoType}**`,
+        `- Languages: ${inventory.languages.join(', ') || 'Unknown'}`,
+        `- Framework hints: ${inventory.frameworkHints.join(', ') || 'None'}`,
+        `- Package managers: ${inventory.packageManagers.join(', ') || 'Unknown'}`,
+        '',
+        '## Top-level directories',
+        '',
+        ...inventory.topLevelDirs.map((d) => `- ${d}`),
+        '',
+        '## Root files',
+        '',
+        ...inventory.rootFiles.map((f) => `- ${f}`),
+        '',
+        '## Entry points',
+        '',
+        ...(inventory.entryPoints.length ? inventory.entryPoints.map((f) => `- ${f}`) : ['- None detected']),
+        '',
+        '## Test locations',
+        '',
+        ...(inventory.testLocations.length ? inventory.testLocations.map((f) => `- ${f}`) : ['- None detected'])
+    ].join('\n');
+    (0, utils_1.writeText)(path.join(outputDir, 'reports', 'inventory.md'), md);
+}
+function exportBlueprintMarkdown(blueprint, outputDir) {
+    (0, utils_1.ensureDir)(path.join(outputDir, 'blueprint'));
+    (0, utils_1.writeText)(path.join(outputDir, 'blueprint', 'system-overview.md'), buildSystemOverview(blueprint));
+    (0, utils_1.writeText)(path.join(outputDir, 'blueprint', 'domain-map.md'), buildDomainMap(blueprint));
+    (0, utils_1.writeText)(path.join(outputDir, 'blueprint', 'architecture-rules.md'), buildArchitectureRules(blueprint));
+    (0, utils_1.writeText)(path.join(outputDir, 'blueprint', 'api-surfaces.md'), buildApiSurfaces(blueprint));
+    (0, utils_1.writeText)(path.join(outputDir, 'blueprint', 'risks-and-gaps.md'), buildRisksAndGaps(blueprint));
+    (0, utils_1.writeText)(path.join(outputDir, 'blueprint', 'next-prompts.md'), buildNextPrompts(blueprint));
+    (0, utils_1.writeText)(path.join(outputDir, 'reports', 'module-report.md'), buildModuleReport(blueprint));
+    (0, utils_1.writeText)(path.join(outputDir, 'reports', 'dependency-report.md'), buildDependencyReport(blueprint));
+}
+function exportPromptPackMarkdown(promptPack, outputDir) {
+    (0, utils_1.ensureDir)(path.join(outputDir, 'prompts'));
+    for (const [name, content] of Object.entries(promptPack)) {
+        (0, utils_1.writeText)(path.join(outputDir, 'prompts', `${name}.md`), `${content}\n`);
+    }
+}
+function buildSystemOverview(blueprint) {
+    return `# System Overview\n\n${blueprint.summary}\n\n## Repository Type\n\n- ${blueprint.repo_type}\n\n## Architecture Style\n\n${blueprint.architecture.style.map((v) => `- ${v}`).join('\n') || '- Unknown'}\n\n## Modules\n\n${blueprint.modules.map((m) => `- **${m.name}**: ${m.purpose}`).join('\n')}\n\n## Reusable Foundations\n\n${blueprint.reusable_foundations.map((v) => `- ${v}`).join('\n') || '- None inferred'}\n`;
+}
+function buildDomainMap(blueprint) {
+    return `# Domain Map\n\n## Entities\n\n${blueprint.entities.map((e) => `### ${e.name}\n- Description: ${e.description}\n- Fields: ${e.fields.join(', ') || 'None inferred'}\n- Rules:\n${e.rules.map((r) => `  - ${r}`).join('\n') || '  - None inferred'}`).join('\n\n') || 'No entities inferred.'}\n\n## Use Cases\n\n${blueprint.use_cases.map((u) => `### ${u.name}\n- Actors: ${u.actors.join(', ') || 'Unknown'}\n- Steps:\n${u.steps.map((s) => `  - ${s}`).join('\n')}\n- Related Entities: ${u.relatedEntities.join(', ') || 'None'}`).join('\n\n') || 'No use cases inferred.'}`;
+}
+function buildArchitectureRules(blueprint) {
+    const rules = [
+        ...blueprint.architecture.dependency_rules,
+        'Keep configuration explicit and environment-aware.',
+        'Preserve module boundaries when adding new features.',
+        'Prefer reusable foundations over app-specific shortcuts.'
+    ];
+    return `# Architecture Rules\n\n${rules.map((r) => `- ${r}`).join('\n')}`;
+}
+function buildApiSurfaces(blueprint) {
+    return `# API Surfaces\n\n${blueprint.api_surfaces.map((a) => `- **${a.type}** — ${a.name}: ${a.details}`).join('\n')}\n\n## Events\n\n${blueprint.events.map((e) => `- ${e}`).join('\n') || '- None inferred'}`;
+}
+function buildRisksAndGaps(blueprint) {
+    return `# Risks and Gaps\n\n## Risks\n\n${blueprint.risks.map((r) => `- ${r}`).join('\n') || '- None inferred'}\n\n## Refactor Opportunities\n\n${blueprint.refactor_opportunities.map((r) => `- ${r}`).join('\n') || '- None inferred'}\n\n## Open Questions\n\n${blueprint.open_questions.map((q) => `- ${q}`).join('\n') || '- None inferred'}`;
+}
+function buildNextPrompts(blueprint) {
+    return `# Next Prompts\n\n- Refactor: Read \`.analythis/blueprint.json\` and refactor the codebase to align with the inferred architecture.\n- Regenerate: Generate a clean starter preserving reusable foundations and external interfaces.\n- Extract Core: Separate reusable business or platform primitives from app-specific logic.\n- Onboarding: Create a contributor guide from the blueprint.\n`;
+}
+function buildModuleReport(blueprint) {
+    return `# Module Report\n\n${blueprint.modules.map((m) => `## ${m.name}\n- Purpose: ${m.purpose}\n- Paths: ${m.paths.join(', ')}\n- Depends on: ${m.dependsOn.join(', ') || 'None inferred'}`).join('\n\n')}`;
+}
+function buildDependencyReport(blueprint) {
+    return `# Dependency Report\n\n${blueprint.dependencies.map((d) => `- **${d.name}** (${d.critical ? 'critical' : 'supporting'}): ${d.purpose}`).join('\n') || '- No dependencies inferred'}`;
+}

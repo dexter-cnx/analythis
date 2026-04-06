@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Analythis Blueprint",
+  "type": "object",
+  "required": [
+    "project_name",
+    "repo_type",
+    "summary",
+    "architecture",
+    "modules",
+    "entities",
+    "use_cases",
+    "api_surfaces",
+    "dependencies",
+    "risks",
+    "refactor_opportunities",
+    "generated_at"
+  ],
+  "properties": {
+    "project_name": { "type": "string" },
+    "repo_type": { "type": "string" },
+    "summary": { "type": "string" },
+    "architecture": {
+      "type": "object",
+      "properties": {
+        "style": { "type": "array", "items": { "type": "string" } },
+        "layers": { "type": "array", "items": { "type": "string" } },
+        "module_strategy": { "type": "string" },
+        "dependency_rules": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["style", "layers", "module_strategy", "dependency_rules"]
+    },
+    "modules": { "type": "array" },
+    "entities": { "type": "array" },
+    "use_cases": { "type": "array" },
+    "api_surfaces": { "type": "array" },
+    "events": { "type": "array", "items": { "type": "string" } },
+    "dependencies": { "type": "array" },
+    "configuration": { "type": "array", "items": { "type": "string" } },
+    "reusable_foundations": { "type": "array", "items": { "type": "string" } },
+    "app_specific_logic": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "refactor_opportunities": { "type": "array", "items": { "type": "string" } },
+    "open_questions": { "type": "array", "items": { "type": "string" } },
+    "profile": { "type": "string" },
+    "focus_areas": { "type": "array", "items": { "type": "string" } },
+    "generated_at": { "type": "string" }
+  }
+}

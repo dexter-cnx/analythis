@@ -1,0 +1,41 @@
+{
+  "name": "analythis",
+  "version": "1.0.0",
+  "description": "Framework-agnostic repository analysis engine that turns codebases into blueprints, reports, and prompt packs.",
+  "license": "MIT",
+  "author": "OpenAI",
+  "type": "commonjs",
+  "bin": {
+    "analythis": "dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist .analythis tmp",
+    "dev": "ts-node src/cli/index.ts",
+    "start": "node dist/cli/index.js",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "repository-analysis",
+    "reverse-engineering",
+    "blueprint",
+    "cli",
+    "architecture"
+  ],
+  "dependencies": {
+    "commander": "^14.0.1",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
