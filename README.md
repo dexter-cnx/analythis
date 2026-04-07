@@ -14,6 +14,7 @@
 - **Import graph visualization** — parse imports และส่งออกเป็น JSON, Mermaid และ Graphviz DOT
 - **Semantic code summarization** — ดึง exported symbols และอนุมาน domain responsibilities ต่อ module
 - **Multi-repo comparison** — วิเคราะห์หลาย repository และเปรียบเทียบ blueprint แบบ side-by-side
+- **LLM deep-synthesis** — ส่ง blueprint ให้ Anthropic, OpenAI หรือ Ollama สรุป, วิเคราะห์ risk, วางแผน refactor และสร้าง onboarding guide
 - สร้างไฟล์ `.analythis/inventory.json` และ `.analythis/blueprint.json`
 - ส่งออก markdown blueprint pack พร้อม findings จัดเรียงตาม severity
 - ส่งออก YAML จาก blueprint JSON
@@ -82,6 +83,14 @@ analythis graph .
 ```bash
 analythis compare ./repo-a ./repo-b
 analythis compare ./repo-a ./repo-b ./repo-c --format md --output ./out
+```
+
+รัน LLM synthesis หลังการวิเคราะห์:
+
+```bash
+analythis analyze . --llm-summarize --llm-risks
+analythis analyze . --llm-refactor --llm-provider openai
+analythis analyze . --llm-onboard --llm-provider ollama --llm-model llama3
 ```
 
 ## การตรวจจับ Profile
@@ -197,6 +206,74 @@ Comparison report แสดง:
 - **Unique characteristics** — สิ่งที่แต่ละ repo มีแต่ repo อื่นไม่มี
 - **Recommendation** — สรุปแนะนำสำหรับการ integrate หรือ align
 
+## LLM Deep-Synthesis (v2.0)
+
+หลังจากการวิเคราะห์แบบ heuristic `analythis` สามารถส่ง blueprint ให้ LLM เพื่อสร้าง insight ที่ลึกกว่า
+
+### Synthesis tasks
+
+| Flag | ไฟล์ output | คำอธิบาย |
+| --- | --- | --- |
+| `--llm-summarize` | `llm/llm-summary.md` | Executive summary — จุดประสงค์, สถาปัตยกรรม, risk, ขั้นตอนถัดไป |
+| `--llm-risks` | `llm/llm-risks.md` | วิเคราะห์ risk เชิงลึก พร้อม root cause, business impact และ remediation backlog |
+| `--llm-refactor` | `llm/llm-refactor.md` | แผน refactor จัดลำดับความสำคัญ พร้อม rationale และ effort estimate |
+| `--llm-onboard` | `llm/llm-onboard.md` | Onboarding guide สำหรับนักพัฒนาใหม่ |
+
+### Providers ที่รองรับ
+
+| Provider | Flag | ต้องการ |
+| --- | --- | --- |
+| Anthropic (default) | `--llm-provider anthropic` | `npm install @anthropic-ai/sdk` + `ANTHROPIC_API_KEY` |
+| OpenAI | `--llm-provider openai` | `npm install openai` + `OPENAI_API_KEY` |
+| Ollama | `--llm-provider ollama` | Ollama รันในเครื่อง (`ollama serve`) |
+
+ทั้ง `@anthropic-ai/sdk` และ `openai` เป็น **optional peer dependencies** — ติดตั้งเฉพาะที่ต้องการใช้ Ollama ไม่ต้องติดตั้ง package เพิ่ม (ใช้ native `fetch`)
+
+### การใช้งาน
+
+```bash
+# ใช้ ANTHROPIC_API_KEY จาก environment (provider เริ่มต้น)
+analythis analyze . --llm-summarize
+
+# รันหลาย task พร้อมกัน
+analythis analyze . --llm-summarize --llm-risks --llm-refactor --llm-onboard
+
+# เปลี่ยน provider หรือ model
+analythis analyze . --llm-risks --llm-provider openai --llm-model gpt-4o
+analythis analyze . --llm-onboard --llm-provider ollama --llm-model llama3
+```
+
+### Config file `.analythisrc.json`
+
+วางไฟล์นี้ที่ root ของ project หรือ home directory เพื่อตั้งค่าเริ่มต้น:
+
+```json
+{
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-opus-4-6",
+    "apiKey": "${ANTHROPIC_API_KEY}"
+  }
+}
+```
+
+`${VAR_NAME}` จะถูก resolve จาก environment variables ตอน runtime CLI flags มีความสำคัญสูงกว่า config file เสมอ
+
+### Custom providers
+
+Register LLM plugin เพิ่มเติมที่ runtime:
+
+```typescript
+import { registerLLMPlugin } from '@dextercnx/analythis/llm/registry';
+
+registerLLMPlugin({
+  name: 'my-provider' as any,
+  async synthesize(prompt, config) {
+    return myClient.complete(prompt);
+  }
+});
+```
+
 ## โครงสร้าง Output
 
 `analythis analyze .` จะสร้างไฟล์ดังนี้:
@@ -209,6 +286,12 @@ Comparison report แสดง:
   graph.json              ← import graph (เมื่อใช้ --graph)
   graph.mmd               ← Mermaid diagram
   graph.dot               ← Graphviz DOT
+  llm/                    ← LLM synthesis (เมื่อใช้ --llm-* flags)
+    index.md
+    llm-summary.md
+    llm-risks.md
+    llm-refactor.md
+    llm-onboard.md
   reports/
     inventory.md
     module-report.md      ← มี exports + responsibilities ต่อ module
@@ -249,6 +332,12 @@ Comparison report แสดง:
 - `--shallow`: วิเคราะห์เร็วขึ้น เบาขึ้น
 - `--verbose`: แสดง log รายละเอียด
 - `--graph`: สร้าง import graph ด้วย (`graph.json`, `graph.mmd`, `graph.dot`)
+- `--llm-summarize`: LLM — สร้าง executive summary
+- `--llm-risks`: LLM — วิเคราะห์ risk เชิงลึก
+- `--llm-refactor`: LLM — สร้างแผน refactor
+- `--llm-onboard`: LLM — สร้าง onboarding guide
+- `--llm-provider <name>`: เลือก provider — `anthropic | openai | ollama`
+- `--llm-model <name>`: ระบุชื่อ model
 
 ### `analythis graph <path-or-url>`
 
@@ -288,12 +377,18 @@ Comparison report แสดง:
 src/
   profiles/         ← นิยาม profile, registry, detector
   rules/            ← rule engine + 10 กฎ (dependency / architecture / structure / cross-cutting)
+  llm/              ← ระบบ LLM plugin
+    plugins/        ← anthropic, openai, ollama
+    config.ts       ← อ่าน .analythisrc.json + resolve env var
+    registry.ts     ← plugin registry
+    synthesizer.ts  ← prompt builder + task runner
+    types.ts        ← LLMPlugin, LLMConfig, SynthesisTask interfaces
   core/
     engine/         ← analyzer pipeline, comparator
     types/          ← Blueprint, Inventory, options
   inspectors/       ← inventory, architecture, domain, interface, manifest, risk,
                        import-graph, semantic
-  exporters/        ← markdown, yaml, graph, comparison
+  exporters/        ← markdown, yaml, graph, comparison, llm
   intake/           ← local path + git clone resolution
   cli/              ← commander CLI
 ```
@@ -346,6 +441,8 @@ export const myRule: AnalysisRule = {
 
 `analythis` ใช้วิธี heuristic โดยเจตนา การตรวจจับเป็น deterministic และ explainable — ทุก confidence score มาพร้อมรายการ signal ที่ตรวจพบ blueprint ที่ได้สามารถนำไปป้อนให้ coding agent, refactor planner หรือ workflow สร้างเอกสาร onboarding ได้ทันที
 
+LLM layer เป็น optional และ additive — pipeline วิเคราะห์หลักให้ผลลัพธ์เดิมไม่ว่าจะใช้ `--llm-*` flags หรือไม่
+
 ## พัฒนาต่อ
 
 ```bash
@@ -362,5 +459,5 @@ npm run dev -- analyze .
 | v1.1 | Import graph visualization | ✅ เสร็จแล้ว |
 | v1.2 | Semantic code summarization | ✅ เสร็จแล้ว |
 | v1.3 | Multi-repo comparison | ✅ เสร็จแล้ว |
-| v2.0 | LLM plugin mode | วางแผน |
+| v2.0 | LLM plugin mode | ✅ เสร็จแล้ว |
 | v2.1 | Web dashboard | วางแผน |

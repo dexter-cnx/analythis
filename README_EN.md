@@ -14,6 +14,7 @@ It inspects a local repository or a Git URL, automatically detects the repositor
 - **Import graph visualization** — parse imports and export as JSON, Mermaid, and Graphviz DOT
 - **Semantic code summarization** — extract exported symbols and infer domain responsibilities per module
 - **Multi-repo comparison** — analyze N repositories and diff their blueprints side-by-side
+- **LLM deep-synthesis** — feed the blueprint to Anthropic, OpenAI, or Ollama for executive summaries, risk analysis, refactor plans, and onboarding guides
 - Generate `.analythis/inventory.json` and `.analythis/blueprint.json`
 - Export markdown blueprint pack with severity-ranked findings
 - Export YAML from blueprint JSON
@@ -82,6 +83,14 @@ Compare two or more repositories:
 ```bash
 analythis compare ./repo-a ./repo-b
 analythis compare ./repo-a ./repo-b ./repo-c --format md --output ./out
+```
+
+Run LLM synthesis after analysis:
+
+```bash
+analythis analyze . --llm-summarize --llm-risks
+analythis analyze . --llm-refactor --llm-provider openai
+analythis analyze . --llm-onboard --llm-provider ollama --llm-model llama3
 ```
 
 ## Profile detection
@@ -197,6 +206,75 @@ The comparison report highlights:
 - **Unique characteristics** — what each repo has that others don't
 - **Recommendation** — actionable summary for integration or alignment
 
+## LLM deep-synthesis (v2.0)
+
+After the heuristic analysis, `analythis` can feed the blueprint to an LLM to produce deeper insights.
+
+### Synthesis tasks
+
+| Flag | Output file | Description |
+| --- | --- | --- |
+| `--llm-summarize` | `llm/llm-summary.md` | Executive summary: purpose, architecture, risks, next steps |
+| `--llm-risks` | `llm/llm-risks.md` | Deep risk analysis with root causes, business impact, and remediation backlog |
+| `--llm-refactor` | `llm/llm-refactor.md` | Prioritized refactor plan with rationale and effort estimates |
+| `--llm-onboard` | `llm/llm-onboard.md` | Onboarding guide for new contributors |
+
+### Supported providers
+
+| Provider | Flag | Requires |
+| --- | --- | --- |
+| Anthropic (default) | `--llm-provider anthropic` | `npm install @anthropic-ai/sdk` + `ANTHROPIC_API_KEY` |
+| OpenAI | `--llm-provider openai` | `npm install openai` + `OPENAI_API_KEY` |
+| Ollama | `--llm-provider ollama` | Ollama running locally (`ollama serve`) |
+
+Both `@anthropic-ai/sdk` and `openai` are **optional peer dependencies** — install only the one you use. Ollama requires no extra package (uses native `fetch`).
+
+### Usage
+
+```bash
+# Uses ANTHROPIC_API_KEY from environment (default provider)
+analythis analyze . --llm-summarize
+
+# Multiple tasks in one run
+analythis analyze . --llm-summarize --llm-risks --llm-refactor --llm-onboard
+
+# Switch provider or model
+analythis analyze . --llm-risks --llm-provider openai --llm-model gpt-4o
+analythis analyze . --llm-onboard --llm-provider ollama --llm-model llama3
+```
+
+### Config file `.analythisrc.json`
+
+Place this file in your project root or home directory to set defaults:
+
+```json
+{
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-opus-4-6",
+    "apiKey": "${ANTHROPIC_API_KEY}"
+  }
+}
+```
+
+`${VAR_NAME}` placeholders are resolved from environment variables at runtime. CLI flags always override the config file.
+
+### Custom providers
+
+Register a custom LLM plugin at runtime:
+
+```typescript
+import { registerLLMPlugin } from '@dextercnx/analythis/llm/registry';
+
+registerLLMPlugin({
+  name: 'my-provider' as any,
+  async synthesize(prompt, config) {
+    // call your own API and return the response string
+    return myClient.complete(prompt);
+  }
+});
+```
+
 ## Output layout
 
 `analythis analyze .` creates:
@@ -209,6 +287,12 @@ The comparison report highlights:
   graph.json              ← import graph (when --graph is used)
   graph.mmd               ← Mermaid diagram
   graph.dot               ← Graphviz DOT
+  llm/                    ← LLM synthesis output (when --llm-* flags are used)
+    index.md
+    llm-summary.md
+    llm-risks.md
+    llm-refactor.md
+    llm-onboard.md
   reports/
     inventory.md
     module-report.md      ← includes exports + responsibilities per module
@@ -249,6 +333,12 @@ Options:
 - `--shallow`: faster, lighter analysis
 - `--verbose`: log more details
 - `--graph`: also generate import graph (`graph.json`, `graph.mmd`, `graph.dot`)
+- `--llm-summarize`: LLM — generate executive summary
+- `--llm-risks`: LLM — generate deep risk analysis
+- `--llm-refactor`: LLM — generate refactor plan
+- `--llm-onboard`: LLM — generate onboarding guide
+- `--llm-provider <name>`: override provider — `anthropic | openai | ollama`
+- `--llm-model <name>`: override model name
 
 ### `analythis graph <path-or-url>`
 
@@ -288,12 +378,18 @@ Options:
 src/
   profiles/         ← profile definitions, registry, detector
   rules/            ← rule engine + 10 rules (dependency / architecture / structure / cross-cutting)
+  llm/              ← LLM plugin system
+    plugins/        ← anthropic, openai, ollama
+    config.ts       ← .analythisrc.json reader + env var resolver
+    registry.ts     ← plugin registry
+    synthesizer.ts  ← prompt builder + task runner
+    types.ts        ← LLMPlugin, LLMConfig, SynthesisTask interfaces
   core/
     engine/         ← analyzer pipeline, comparator
     types/          ← Blueprint, Inventory, options
   inspectors/       ← inventory, architecture, domain, interface, manifest, risk,
                        import-graph, semantic
-  exporters/        ← markdown, yaml, graph, comparison
+  exporters/        ← markdown, yaml, graph, comparison, llm
   intake/           ← local path + git clone resolution
   cli/              ← commander CLI
 ```
@@ -346,6 +442,8 @@ export const myRule: AnalysisRule = {
 
 `analythis` is intentionally heuristic. Detection is deterministic and explainable — every confidence score comes with the list of signals that fired. The blueprint is safe to feed into coding agents, refactor planners, or onboarding documentation workflows.
 
+The LLM layer is additive and optional — the core analysis pipeline produces the same output regardless of whether `--llm-*` flags are used.
+
 ## Development
 
 ```bash
@@ -362,5 +460,5 @@ npm run dev -- analyze .
 | v1.1 | Import graph visualization | ✅ Done |
 | v1.2 | Semantic code summarization | ✅ Done |
 | v1.3 | Multi-repo comparison | ✅ Done |
-| v2.0 | Pluggable LLM deep-synthesis mode | Planned |
+| v2.0 | Pluggable LLM deep-synthesis mode | ✅ Done |
 | v2.1 | Web dashboard | Planned |

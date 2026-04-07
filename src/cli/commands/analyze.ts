@@ -5,6 +5,9 @@ import { resolveInput } from '../../intake/resolve-input';
 import { exportBlueprintMarkdown, exportInventoryMarkdown, exportPromptPackMarkdown } from '../../exporters/markdown';
 import { buildImportGraph } from '../../inspectors/import-graph-inspector';
 import { exportImportGraph } from '../../exporters/graph';
+import { synthesize } from '../../llm/synthesizer';
+import { resolveLLMConfig } from '../../llm/config';
+import { exportLLMResults } from '../../exporters/llm';
 import { writeJson, ensureDir } from '../../utils';
 
 export async function runAnalyze(input: string, options: AnalyzeOptions): Promise<void> {
@@ -28,6 +31,21 @@ export async function runAnalyze(input: string, options: AnalyzeOptions): Promis
       const graph = buildImportGraph(resolved.workingRoot, options.shallow);
       exportImportGraph(graph, outputDir);
       console.log(`Import graph: ${graph.nodes.filter((n) => n.language !== 'external').length} files, ${graph.edges.filter((e) => e.type === 'internal').length} internal edges`);
+    }
+
+    if (options.llm && options.llm.tasks.length > 0) {
+      const llmConfig = resolveLLMConfig({
+        provider: options.llm.provider,
+        model: options.llm.model
+      });
+      console.log(`Running LLM synthesis (${llmConfig.provider} / ${llmConfig.model}) for: ${options.llm.tasks.join(', ')}...`);
+      const llmResults = await synthesize({
+        tasks: options.llm.tasks,
+        config: llmConfig,
+        blueprint: result.blueprint
+      });
+      exportLLMResults(llmResults, outputDir);
+      console.log(`LLM output: ${outputDir}/llm/`);
     }
 
     console.log(`analythis analyze completed.`);

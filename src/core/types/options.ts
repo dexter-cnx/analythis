@@ -1,4 +1,13 @@
 import type { ProfileName } from './inventory';
+import type { SynthesisTask } from '../../llm/types';
+
+export interface LLMOptions {
+  tasks: SynthesisTask[];
+  /** Provider override (anthropic | openai | ollama). Reads .analythisrc.json if omitted. */
+  provider?: string;
+  /** Model override. Reads .analythisrc.json / default if omitted. */
+  model?: string;
+}
 
 export interface AnalyzeOptions {
   profile: ProfileName;
@@ -9,6 +18,7 @@ export interface AnalyzeOptions {
   shallow: boolean;
   verbose: boolean;
   graph: boolean;
+  llm?: LLMOptions;
 }
 
 export interface ExportOptions {
