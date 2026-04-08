@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.FILE_LIMITS = void 0;
 exports.ensureDir = ensureDir;
 exports.writeJson = writeJson;
 exports.writeText = writeText;
@@ -61,8 +62,19 @@ function writeText(filePath, content) {
 function readJson(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
+/** Shared file-count limits used across all inspectors. */
+exports.FILE_LIMITS = {
+    /** Shallow / fast pass. */
+    shallow: 300,
+    /** Standard inspector depth. */
+    standard: 1000,
+    /** Import-graph scan. */
+    graph: 500,
+    /** Full deep scan (default when not shallow). */
+    deep: 3000,
+};
 function listFilesRecursive(root, options) {
-    const maxFiles = options?.maxFiles ?? (options?.shallow ? 300 : 3000);
+    const maxFiles = options?.maxFiles ?? (options?.shallow ? exports.FILE_LIMITS.shallow : exports.FILE_LIMITS.deep);
     const results = [];
     const ignoredDirs = new Set(['.git', 'node_modules', 'dist', 'build', '.next', '.dart_tool', 'coverage', '.turbo', '.idea', '.vscode']);
     function walk(current) {
@@ -83,6 +95,9 @@ function listFilesRecursive(root, options) {
         }
     }
     walk(root);
+    if (results.length >= maxFiles && options?.onTruncated) {
+        options.onTruncated(maxFiles);
+    }
     return results.sort();
 }
 function detectLanguageFromExtension(file) {

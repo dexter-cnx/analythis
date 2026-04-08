@@ -6,11 +6,20 @@ import { exportBlueprintMarkdown, exportInventoryMarkdown, exportPromptPackMarkd
 import { buildImportGraph } from '../../inspectors/import-graph-inspector';
 import { exportImportGraph } from '../../exporters/graph';
 import { synthesize } from '../../llm/synthesizer';
-import { resolveLLMConfig } from '../../llm/config';
+import { resolveLLMConfig, validateLLMConfig } from '../../llm/config';
 import { exportLLMResults } from '../../exporters/llm';
 import { writeJson, ensureDir } from '../../utils';
 
 export async function runAnalyze(input: string, options: AnalyzeOptions): Promise<void> {
+  // Validate LLM config before cloning/scanning — fail fast with a clear message.
+  if (options.llm && options.llm.tasks.length > 0) {
+    const llmConfig = resolveLLMConfig({
+      provider: options.llm.provider,
+      model: options.llm.model
+    });
+    validateLLMConfig(llmConfig);
+  }
+
   const resolved = resolveInput(input, options.branch);
   try {
     const outputDir = path.resolve(options.outputDir);
@@ -34,10 +43,7 @@ export async function runAnalyze(input: string, options: AnalyzeOptions): Promis
     }
 
     if (options.llm && options.llm.tasks.length > 0) {
-      const llmConfig = resolveLLMConfig({
-        provider: options.llm.provider,
-        model: options.llm.model
-      });
+      const llmConfig = resolveLLMConfig({ provider: options.llm.provider, model: options.llm.model });
       console.log(`Running LLM synthesis (${llmConfig.provider} / ${llmConfig.model}) for: ${options.llm.tasks.join(', ')}...`);
       const llmResults = await synthesize({
         tasks: options.llm.tasks,

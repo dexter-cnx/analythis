@@ -48,7 +48,17 @@ function resolveInput(input, branch) {
     if (/^https?:\/\//.test(input) || input.endsWith('.git')) {
         const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), `analythis-${(0, utils_1.sanitizeName)(path.basename(input, '.git'))}-`));
         const branchPart = branch ? ` --branch ${branch}` : '';
-        (0, utils_1.run)(`git clone --depth 1${branchPart} ${input} ${tempRoot}`);
+        try {
+            (0, utils_1.run)(`git clone --depth 1${branchPart} ${input} ${tempRoot}`);
+        }
+        catch (err) {
+            try {
+                fs.rmSync(tempRoot, { recursive: true, force: true });
+            }
+            catch { /* best effort */ }
+            const detail = err instanceof Error ? err.message.split('\n')[0] : String(err);
+            throw new Error(`analythis: Failed to clone "${input}"${branch ? ` (branch: ${branch})` : ''}: ${detail}`);
+        }
         return {
             workingRoot: tempRoot,
             cleanup: () => {

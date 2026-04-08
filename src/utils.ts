@@ -20,8 +20,24 @@ export function readJson<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
 }
 
-export function listFilesRecursive(root: string, options?: { shallow?: boolean; maxFiles?: number }): string[] {
-  const maxFiles = options?.maxFiles ?? (options?.shallow ? 300 : 3000);
+/** Shared file-count limits used across all inspectors. */
+export const FILE_LIMITS = {
+  /** Shallow / fast pass. */
+  shallow: 300,
+  /** Standard inspector depth. */
+  standard: 1000,
+  /** Import-graph scan. */
+  graph: 500,
+  /** Full deep scan (default when not shallow). */
+  deep: 3000,
+} as const;
+
+export function listFilesRecursive(root: string, options?: {
+  shallow?: boolean;
+  maxFiles?: number;
+  onTruncated?: (limit: number) => void;
+}): string[] {
+  const maxFiles = options?.maxFiles ?? (options?.shallow ? FILE_LIMITS.shallow : FILE_LIMITS.deep);
   const results: string[] = [];
   const ignoredDirs = new Set(['.git', 'node_modules', 'dist', 'build', '.next', '.dart_tool', 'coverage', '.turbo', '.idea', '.vscode']);
 
@@ -40,6 +56,9 @@ export function listFilesRecursive(root: string, options?: { shallow?: boolean; 
   }
 
   walk(root);
+  if (results.length >= maxFiles && options?.onTruncated) {
+    options.onTruncated(maxFiles);
+  }
   return results.sort();
 }
 

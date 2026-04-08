@@ -32,7 +32,10 @@ export function detectProfile(inventory: Inventory, hint?: ProfileName): Profile
     .filter((m) => m.profile.id !== 'generic')
     .sort((a, b) => b.score - a.score || a.profile.id.localeCompare(b.profile.id));
 
-  const genericMatch = matches.find((m) => m.profile.id === 'generic')!;
+  const genericMatch = matches.find((m) => m.profile.id === 'generic');
+  if (!genericMatch) {
+    throw new Error('analythis: Generic profile not found in registry. Ensure the generic profile is registered.');
+  }
 
   // Determine primary: best non-generic if it clears the threshold, else generic
   let ranked: ProfileMatch[];

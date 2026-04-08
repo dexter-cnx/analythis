@@ -1,9 +1,12 @@
 import * as path from 'path';
-import { listFilesRecursive, readTextSafe } from '../utils';
+import { listFilesRecursive, readTextSafe, FILE_LIMITS } from '../utils';
 import type { BlueprintModule } from '../core/types/blueprint';
 
-// Keyword → responsibility label mapping
-const DOMAIN_KEYWORDS: [RegExp, string][] = [
+/**
+ * Default keyword → responsibility label mappings.
+ * Exported so callers can read, extend, or replace the list.
+ */
+export const DOMAIN_KEYWORDS: [RegExp, string][] = [
   [/\bauth|login|signin|logout|jwt|token|session|password|credential/i, 'Authentication'],
   [/\buser|account|profile|member/i, 'User management'],
   [/\bpayment|billing|invoice|subscription|stripe|charge/i, 'Billing & payments'],
@@ -63,10 +66,15 @@ function detectLanguage(file: string): string | null {
   return null;
 }
 
-function inferResponsibilities(exports: string[], fileNames: string[], dirPath: string): string[] {
+function inferResponsibilities(
+  exports: string[],
+  fileNames: string[],
+  dirPath: string,
+  extraKeywords: [RegExp, string][] = []
+): string[] {
   const corpus = [dirPath, ...fileNames, ...exports].join(' ');
   const found = new Set<string>();
-  for (const [re, label] of DOMAIN_KEYWORDS) {
+  for (const [re, label] of [...DOMAIN_KEYWORDS, ...extraKeywords]) {
     if (re.test(corpus)) found.add(label);
   }
   return [...found];
@@ -81,12 +89,28 @@ function buildModuleSummary(exports: string[], responsibilities: string[], dirPa
   return `${respPart}${expPart}`.trim();
 }
 
+/**
+ * Enrich modules with semantic information.
+ *
+ * @param modules        Modules to enrich.
+ * @param repoRoot       Repository root directory.
+ * @param shallow        Limit file scan depth.
+ * @param extraKeywords  Additional [pattern, label] pairs to extend domain detection.
+ *                       Useful for project-specific terminology not in the default list.
+ */
 export function enrichModulesWithSemantics(
   modules: BlueprintModule[],
   repoRoot: string,
-  shallow = false
+  shallow = false,
+  extraKeywords: [RegExp, string][] = []
 ): BlueprintModule[] {
-  const allFiles = listFilesRecursive(repoRoot, { shallow, maxFiles: 1000 });
+  const allFiles = listFilesRecursive(repoRoot, {
+    shallow,
+    maxFiles: FILE_LIMITS.standard,
+    onTruncated: (limit) => {
+      console.warn(`analythis: semantic scan limited to ${limit} files. Some modules may have incomplete responsibility detection.`);
+    }
+  });
 
   return modules.map((mod) => {
     const modulePath = mod.paths[0] ?? mod.name;
@@ -108,7 +132,7 @@ export function enrichModulesWithSemantics(
     }
 
     const uniqueExports = [...new Set(allExports)].slice(0, 40);
-    const responsibilities = inferResponsibilities(uniqueExports, fileBaseNames, modulePath);
+    const responsibilities = inferResponsibilities(uniqueExports, fileBaseNames, modulePath, extraKeywords);
     const summary = buildModuleSummary(uniqueExports, responsibilities, modulePath);
 
     return {

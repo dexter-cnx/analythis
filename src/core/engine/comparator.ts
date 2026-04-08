@@ -6,6 +6,8 @@ export interface RepoSnapshot {
   name: string;
   inputPath: string;
   blueprint: Blueprint;
+  /** Languages detected in this repo (from inventory.languages). */
+  languages: string[];
 }
 
 export interface ComparisonReport {
@@ -47,21 +49,7 @@ function sharedAcrossAll<T>(arrays: T[][]): T[] {
 }
 
 export function compareBlueprints(snapshots: RepoSnapshot[]): ComparisonReport {
-  const allLanguages = snapshots.map((s) => s.blueprint.detected_profiles.primary
-    ? [s.blueprint.detected_profiles.primary]
-    : []);
-
-  const languageArrays = snapshots.map((s) => {
-    // Derive languages from repo_type and profile
-    const profile = s.blueprint.detected_profiles.primary;
-    const langs: string[] = [];
-    if (profile === 'web') langs.push('web');
-    if (profile === 'backend') langs.push('backend');
-    if (profile === 'mobile') langs.push('mobile');
-    if (profile === 'monorepo') langs.push('monorepo');
-    if (profile === 'library') langs.push('library');
-    return langs;
-  });
+  const languageArrays = snapshots.map((s) => s.languages);
 
   // We derive shared data from blueprint fields
   const styleArrays = snapshots.map((s) => s.blueprint.architecture.style);
@@ -84,8 +72,12 @@ export function compareBlueprints(snapshots: RepoSnapshot[]): ComparisonReport {
       .filter((s) => s.name !== snap.name)
       .flatMap((s) => s.blueprint.risks);
 
+    const otherLanguages = snapshots
+      .filter((s) => s.name !== snap.name)
+      .flatMap((s) => s.languages);
+
     unique[snap.name] = {
-      languages: [],
+      languages: difference(snap.languages, otherLanguages),
       architectureStyles: difference(snap.blueprint.architecture.style, otherStyles),
       modules: difference(
         snap.blueprint.modules.map((m) => m.name),
@@ -99,7 +91,8 @@ export function compareBlueprints(snapshots: RepoSnapshot[]): ComparisonReport {
   const profileMismatch = new Set(profiles).size > 1;
   const styles = snapshots.map((s) => s.blueprint.architecture.style.join(','));
   const architectureMismatch = new Set(styles).size > 1;
-  const languageMismatch = false; // We don't track per-language details here
+  const allLangSets = snapshots.map((s) => s.languages.slice().sort().join(','));
+  const languageMismatch = new Set(allLangSets).size > 1;
 
   const recommendation = buildRecommendation(snapshots, profileMismatch, architectureMismatch, sharedRisks);
 
@@ -167,7 +160,12 @@ export async function runComparison(
       verbose: false,
       graph: false
     });
-    snapshots.push({ name, inputPath: root, blueprint: result.blueprint });
+    snapshots.push({
+      name,
+      inputPath: root,
+      blueprint: result.blueprint,
+      languages: result.inventory.languages
+    });
   }
 
   return compareBlueprints(snapshots);

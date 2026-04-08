@@ -12,6 +12,7 @@ import { inspectRefactorOpportunities, inspectRisks } from '../../inspectors/ris
 import { detectProfile } from '../../profiles/detector';
 import { defaultRuleEngine } from '../../rules/index';
 import { enrichModulesWithSemantics } from '../../inspectors/semantic-inspector';
+import { readRcConfig } from '../../llm/config';
 
 export function analyzeRepository(
   repoRoot: string,
@@ -23,10 +24,21 @@ export function analyzeRepository(
   const profileResult = detectProfile(inventory, options.profile);
   const primaryProfileName = profileResult.primary.profile.id;
 
+  // Load custom domain keywords from .analythisrc.json
+  const rc = readRcConfig();
+  const extraKeywords: [RegExp, string][] = (rc?.domainKeywords ?? []).map(({ pattern, label }) => {
+    try {
+      return [new RegExp(pattern, 'i'), label] as [RegExp, string];
+    } catch {
+      console.warn(`analythis: Invalid domainKeywords pattern "${pattern}" in .analythisrc.json — skipped.`);
+      return null;
+    }
+  }).filter((entry): entry is [RegExp, string] => entry !== null);
+
   // --- Structural inspectors ---
   const architecture = inspectArchitecture(inventory, primaryProfileName);
   const rawModules = inspectModules(inventory);
-  const modules = enrichModulesWithSemantics(rawModules, repoRoot, options.shallow);
+  const modules = enrichModulesWithSemantics(rawModules, repoRoot, options.shallow, extraKeywords);
   const entities = inspectEntities(repoRoot, inventory, options.shallow);
   const use_cases = inspectUseCases(repoRoot, inventory, options.shallow);
   const api_surfaces = inspectApiSurfaces(inventory);

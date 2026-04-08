@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { listFilesRecursive, readTextSafe } from '../utils';
+import { listFilesRecursive, readTextSafe, FILE_LIMITS } from '../utils';
 
 export interface ImportGraphNode {
   id: string;
@@ -20,7 +20,7 @@ export interface ImportGraph {
   generatedAt: string;
 }
 
-const MAX_FILES = 500;
+const MAX_FILES = FILE_LIMITS.graph;
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py', '.dart']);
 
 function detectLanguage(file: string): string | null {
@@ -43,16 +43,16 @@ function resolveImportTarget(
     let resolved = path.relative(repoRoot, path.resolve(dir, rawImport));
     // Normalize separators
     resolved = resolved.replace(/\\/g, '/');
-    // If no extension, try common source extensions
+    // If no extension, pick the most likely extension based on the source file's language
     if (!path.extname(resolved)) {
-      for (const ext of ['.ts', '.tsx', '.js', '.jsx', '.py', '.dart']) {
-        const candidate = resolved + ext;
-        // We just record the resolved path — existence checking is too expensive here
-        if (ext === '.ts' || ext === '.tsx') {
-          resolved = candidate;
-          break;
-        }
-      }
+      const srcLang = detectLanguage(fromFile);
+      const extsByLang: Record<string, string> = {
+        TypeScript: '.ts',
+        JavaScript: '.js',
+        Python: '.py',
+        Dart: '.dart',
+      };
+      resolved = resolved + (extsByLang[srcLang ?? ''] ?? '.ts');
     }
     return { resolved, type: 'internal' };
   }
@@ -108,7 +108,13 @@ function parseImports(content: string, language: string): string[] {
 }
 
 export function buildImportGraph(repoRoot: string, shallow = false): ImportGraph {
-  const allFiles = listFilesRecursive(repoRoot, { shallow, maxFiles: MAX_FILES });
+  const allFiles = listFilesRecursive(repoRoot, {
+    shallow,
+    maxFiles: MAX_FILES,
+    onTruncated: (limit) => {
+      console.warn(`analythis: import graph scan limited to ${limit} files. Use --deep for larger repos.`);
+    }
+  });
   const sourceFiles = allFiles.filter((f) => SOURCE_EXTENSIONS.has(path.extname(f).toLowerCase()));
 
   const nodeMap = new Map<string, ImportGraphNode>();

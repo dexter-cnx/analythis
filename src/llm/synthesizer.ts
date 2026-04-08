@@ -1,5 +1,5 @@
 import type { Blueprint } from '../core/types/blueprint';
-import type { SynthesisTask, SynthesisOptions, SynthesisResult } from './types';
+import type { SynthesisTask, SynthesisOptions, SynthesisResult, LLMConfig } from './types';
 import { getLLMPlugin } from './registry';
 
 // ---------------------------------------------------------------------------
@@ -109,14 +109,53 @@ Write the onboarding guide now:`;
 // Synthesis runner
 // ---------------------------------------------------------------------------
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Call the LLM plugin with exponential-backoff retry on rate-limit errors.
+ * Retries up to `maxAttempts` times (default 3) with delays of 2s, 4s, 8s...
+ */
+async function synthesizeWithRetry(
+  plugin: ReturnType<typeof getLLMPlugin>,
+  prompt: string,
+  config: LLMConfig,
+  maxAttempts = 3
+): Promise<string> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await plugin.synthesize(prompt, config);
+    } catch (err) {
+      const isRateLimit =
+        (err as { status?: number }).status === 429 ||
+        (err instanceof Error && /rate.?limit|too many requests/i.test(err.message));
+
+      if (isRateLimit && attempt < maxAttempts) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.warn(`analythis: LLM rate limit hit — retrying in ${delay / 1000}s (attempt ${attempt}/${maxAttempts})...`);
+        await sleep(delay);
+        continue;
+      }
+      throw err;
+    }
+  }
+  /* istanbul ignore next */
+  throw new Error('analythis: synthesizeWithRetry exhausted without result');
+}
+
 export async function synthesize(options: SynthesisOptions): Promise<SynthesisResult[]> {
   const { tasks, config, blueprint } = options;
   const plugin = getLLMPlugin(config.provider);
   const results: SynthesisResult[] = [];
 
-  for (const task of tasks) {
+  for (let i = 0; i < tasks.length; i++) {
+    // Small pause between requests to stay within per-minute rate limits
+    if (i > 0) await sleep(500);
+
+    const task = tasks[i];
     const prompt = buildPrompt(task, blueprint);
-    const content = await plugin.synthesize(prompt, config);
+    const content = await synthesizeWithRetry(plugin, prompt, config);
     results.push({
       task,
       content,

@@ -37,6 +37,12 @@ export interface SynthesisOptions {
 /** Shape of .analythisrc.json */
 export interface AnalythisRc {
   llm?: Partial<LLMConfig>;
+  /**
+   * Additional domain keyword mappings for semantic analysis.
+   * Each entry is a [regexPattern, label] pair, e.g.:
+   *   { "pattern": "\\bsupply.chain\\b", "label": "Supply chain" }
+   */
+  domainKeywords?: Array<{ pattern: string; label: string }>;
 }
 
 /** Default models per provider */

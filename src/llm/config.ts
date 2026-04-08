@@ -80,3 +80,18 @@ export function resolveLLMConfig(overrides: LLMCliOverrides = {}): LLMConfig {
     maxTokens: rcLlm.maxTokens ?? 2048
   };
 }
+
+/**
+ * Validate the resolved LLM config before running synthesis.
+ * Throws an actionable error early if required credentials are missing,
+ * rather than failing mid-synthesis after analysis has already run.
+ */
+export function validateLLMConfig(config: LLMConfig): void {
+  if (config.provider !== 'ollama' && !config.apiKey) {
+    const envVar = config.provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY';
+    throw new Error(
+      `analythis: API key required for provider "${config.provider}". ` +
+      `Set the ${envVar} environment variable or add "apiKey" to .analythisrc.json.`
+    );
+  }
+}
