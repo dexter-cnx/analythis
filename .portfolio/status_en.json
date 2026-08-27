@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "title": "analythis",
+    "tagline": "A framework-agnostic repository analysis tool that produces machine-readable blueprints and human-facing reports.",
+    "status": "active",
+    "version": "1.0"
+  },
+  "summary": {
+    "short": "analythis analyzes local folders or Git repositories to infer structure, architecture, modules, entities, APIs, risks, and reusable parts, then exports machine-readable blueprints and Markdown reports.",
+    "long": "Version 1.0 intentionally uses heuristic analysis for fast structured context. It generates inventory, blueprint, prompt-pack, Markdown, and YAML outputs, supports web/backend/mobile/library/monorepo profiles, and is designed to feed coding agents, refactor planning, regeneration, core extraction, and onboarding workflows."
+  },
+  "highlights": [
+    "Local folder and Git URL analysis",
+    "Machine-readable inventory and blueprint output",
+    "Markdown and YAML export",
+    "Prompt packs for refactoring, regeneration, extraction, and onboarding"
+  ],
+  "tech": ["TypeScript", "Node.js", "CLI", "Git"],
+  "links": {
+    "repository": "https://github.com/dexter-cnx/analythis",
+    "homepage": null,
+    "package": "https://www.npmjs.com/package/@dextercnx/analythis",
+    "docs": null,
+    "demo": null
+  },
+  "updatedAt": "2026-08-27T00:00:00Z"
+}

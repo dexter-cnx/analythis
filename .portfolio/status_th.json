@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "title": "analythis",
+    "tagline": "เครื่องมือวิเคราะห์ repository แบบไม่ผูกกับ framework เพื่อสร้าง blueprint ที่อ่านได้ทั้งโดยเครื่องและมนุษย์",
+    "status": "active",
+    "version": "1.0"
+  },
+  "summary": {
+    "short": "analythis วิเคราะห์โฟลเดอร์ในเครื่องหรือ Git repository เพื่ออนุมานโครงสร้าง สถาปัตยกรรม โมดูล entities, APIs, ความเสี่ยง และส่วนที่นำกลับมาใช้ใหม่ได้ ก่อนส่งออกเป็น blueprint และรายงาน Markdown",
+    "long": "เวอร์ชัน 1.0 ใช้ heuristic analysis โดยตั้งใจเพื่อสร้าง structured context ได้เร็ว รองรับ inventory, blueprint, prompt-pack, Markdown และ YAML รวมถึง profile สำหรับ web, backend, mobile, library และ monorepo และออกแบบให้ใช้ต่อกับ coding agent, refactor planning, regeneration, core extraction และ onboarding workflow"
+  },
+  "highlights": [
+    "วิเคราะห์ local folder และ Git URL",
+    "สร้าง inventory และ blueprint ที่อ่านได้ด้วยเครื่อง",
+    "ส่งออก Markdown และ YAML",
+    "Prompt pack สำหรับ refactor, regeneration, extraction และ onboarding"
+  ],
+  "tech": ["TypeScript", "Node.js", "CLI", "Git"],
+  "links": {
+    "repository": "https://github.com/dexter-cnx/analythis",
+    "homepage": null,
+    "package": "https://www.npmjs.com/package/@dextercnx/analythis",
+    "docs": null,
+    "demo": null
+  },
+  "updatedAt": "2026-08-27T00:00:00Z"
+}
